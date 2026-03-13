@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROMPT QUEST — Mario-Style Prompt Engineering Platformer</title>
+<meta name="description" content="Learn prompt engineering through 3 worlds of guided challenges. Mario-inspired platformer with step-by-step lessons. Free AI-powered evaluation.">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ===== COLOR PALETTE ===== */
+:root {
+  --sky: #5c94fc;
+  --sky-dark: #3878d8;
+  --ground: #00a800;
+  --ground-dark: #007800;
+  --brick: #c84c0c;
+  --brick-dark: #a03808;
+  --qblock: #ffa000;
+  --qblock-dark: #d08000;
+  --coin: #ffd700;
+  --pipe-green: #00b800;
+  --pipe-dark: #008800;
+  --white: #fcfcfc;
+  --text-dark: #1a1a2e;
+  --danger: #e76e55;
+  --success: #06d6a0;
+  --ui-bg: #e4e4e4;
+  --ui-border: #6b6b6b;
+  --panel-bg: #f8f0e0;
+  --panel-border: #c0a060;
+}
+
+/* ===== BASE ===== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;overflow-x:hidden;background:var(--sky);color:var(--text-dark);font-family:'Press Start 2P',cursive;font-size:11px;line-height:1.8}
+
+/* ===== GROUND STRIP ===== */
+body::after{
+  content:'';position:fixed;bottom:0;left:0;right:0;height:48px;z-index:0;
+  background:repeating-linear-gradient(90deg,var(--ground) 0px,var(--ground) 24px,var(--ground-dark) 24px,var(--ground-dark) 48px);
+  border-top:4px solid var(--ground-dark);
+}
+
+/* ===== CLOUDS (decorative) ===== */
+@keyframes cloud-drift{0%{transform:translateX(-200px)}100%{transform:translateX(calc(100vw + 200px))}}
+.cloud{position:fixed;z-index:0;pointer-events:none;opacity:.7}
+.cloud::before,.cloud::after,.cloud span{content:'';display:block;background:var(--white);border-radius:50%}
+.cloud span{width:80px;height:40px;border-radius:20px}
+.cloud::before{position:absolute;width:40px;height:40px;top:-20px;left:16px}
+.cloud::after{position:absolute;width:50px;height:50px;top:-28px;left:40px}
+.cloud-1{top:60px;animation:cloud-drift 30s linear infinite}
+.cloud-2{top:120px;animation:cloud-drift 45s linear infinite 10s}
+.cloud-3{top:40px;animation:cloud-drift 38s linear infinite 20s}
+
+/* ===== SCREENS ===== */
+.screen{display:none;max-width:860px;margin:0 auto;padding:20px 20px 80px;position:relative;z-index:1}
+.screen.active{display:block}
+
+/* ===== MARIO BUTTONS ===== */
+.mario-btn{
+  font-family:'Press Start 2P',cursive;font-size:11px;
+  padding:10px 24px;border:4px solid #000;border-radius:8px;
+  cursor:pointer;color:var(--white);text-shadow:1px 1px 0 rgba(0,0,0,.4);
+  transition:transform .1s;position:relative;
+  background:linear-gradient(180deg,#6888fc 0%,#3050d0 100%);
+}
+.mario-btn:hover{transform:translateY(-2px)}
+.mario-btn:active{transform:translateY(1px)}
+.mario-btn.btn-warning{background:linear-gradient(180deg,var(--qblock) 0%,var(--qblock-dark) 100%)}
+.mario-btn.btn-success{background:linear-gradient(180deg,var(--success) 0%,#04a080 100%)}
+.mario-btn.btn-danger{background:linear-gradient(180deg,var(--danger) 0%,#c04030 100%)}
+.mario-btn.btn-brick{background:linear-gradient(180deg,var(--brick) 0%,var(--brick-dark) 100%)}
+.mario-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.mario-btn.btn-sm{font-size:9px;padding:6px 16px}
+.mario-btn.btn-lg{font-size:13px;padding:12px 36px}
+
+/* ===== MARIO CONTAINERS ===== */
+.mario-container{
+  background:var(--panel-bg);border:4px solid var(--panel-border);
+  border-radius:12px;padding:16px;color:var(--text-dark);
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.1),0 4px 8px rgba(0,0,0,.15);
+}
+.mario-container.dark{background:#2a2a4e;color:var(--white);border-color:#444}
+
+/* ===== MARIO INPUTS ===== */
+.mario-input,.mario-textarea{
+  font-family:'Press Start 2P',cursive;font-size:10px;
+  padding:10px 12px;border:3px solid var(--ui-border);border-radius:6px;
+  background:var(--white);color:var(--text-dark);width:100%;line-height:1.8;
+}
+.mario-input:focus,.mario-textarea:focus{outline:none;border-color:var(--qblock);box-shadow:0 0 0 3px rgba(255,160,0,.3)}
+.mario-textarea{min-height:120px;resize:vertical}
+
+/* ===== PIXEL SPRITES VIA BOX-SHADOW ===== */
+.sprite{display:inline-block;image-rendering:pixelated}
+.sprite-mario{width:4px;height:4px;transform:scale(3);transform-origin:top left;margin-right:48px;margin-bottom:64px;
+  box-shadow:
+    /* Hat */
+    12px 0 0 #e00000,16px 0 0 #e00000,20px 0 0 #e00000,24px 0 0 #e00000,28px 0 0 #e00000,
+    8px 4px 0 #e00000,12px 4px 0 #e00000,16px 4px 0 #e00000,20px 4px 0 #e00000,24px 4px 0 #e00000,28px 4px 0 #e00000,32px 4px 0 #e00000,36px 4px 0 #e00000,
+    /* Face */
+    8px 8px 0 #b06800,12px 8px 0 #b06800,16px 8px 0 #b06800,20px 8px 0 #ffb080,24px 8px 0 #ffb080,28px 8px 0 #000,32px 8px 0 #ffb080,
+    4px 12px 0 #b06800,8px 12px 0 #ffb080,12px 12px 0 #b06800,16px 12px 0 #ffb080,20px 12px 0 #ffb080,24px 12px 0 #ffb080,28px 12px 0 #000,32px 12px 0 #ffb080,36px 12px 0 #ffb080,40px 12px 0 #ffb080,
+    4px 16px 0 #b06800,8px 16px 0 #ffb080,12px 16px 0 #b06800,16px 16px 0 #b06800,20px 16px 0 #ffb080,24px 16px 0 #ffb080,28px 16px 0 #ffb080,32px 16px 0 #000,36px 16px 0 #ffb080,40px 16px 0 #ffb080,44px 16px 0 #ffb080,
+    4px 20px 0 #b06800,8px 20px 0 #b06800,12px 20px 0 #ffb080,16px 20px 0 #ffb080,20px 20px 0 #ffb080,24px 20px 0 #ffb080,28px 20px 0 #000,32px 20px 0 #000,36px 20px 0 #000,40px 20px 0 #000,
+    12px 24px 0 #ffb080,16px 24px 0 #ffb080,20px 24px 0 #ffb080,24px 24px 0 #ffb080,28px 24px 0 #ffb080,32px 24px 0 #ffb080,36px 24px 0 #ffb080,
+    /* Body */
+    8px 28px 0 #e00000,12px 28px 0 #e00000,16px 28px 0 #0000e0,20px 28px 0 #e00000,24px 28px 0 #e00000,28px 28px 0 #e00000,
+    4px 32px 0 #e00000,8px 32px 0 #e00000,12px 32px 0 #e00000,16px 32px 0 #0000e0,20px 32px 0 #e00000,24px 32px 0 #0000e0,28px 32px 0 #e00000,32px 32px 0 #e00000,36px 32px 0 #e00000,
+    4px 36px 0 #e00000,8px 36px 0 #e00000,12px 36px 0 #e00000,16px 36px 0 #0000e0,20px 36px 0 #0000e0,24px 36px 0 #0000e0,28px 36px 0 #0000e0,32px 36px 0 #e00000,36px 36px 0 #e00000,40px 36px 0 #e00000,
+    8px 40px 0 #0000e0,12px 40px 0 #0000e0,16px 40px 0 #0000e0,20px 40px 0 #0000e0,24px 40px 0 #0000e0,28px 40px 0 #0000e0,32px 40px 0 #0000e0,
+    /* Shoes */
+    8px 44px 0 #b06800,12px 44px 0 #b06800,16px 44px 0 #b06800,24px 44px 0 #b06800,28px 44px 0 #b06800,32px 44px 0 #b06800,
+    4px 48px 0 #b06800,8px 48px 0 #b06800,12px 48px 0 #b06800,16px 48px 0 #b06800,24px 48px 0 #b06800,28px 48px 0 #b06800,32px 48px 0 #b06800,36px 48px 0 #b06800;
+}
+
+.sprite-coin{width:4px;height:4px;transform:scale(2.5);transform-origin:top left;margin-right:32px;margin-bottom:40px;
+  box-shadow:
+    8px 0 0 var(--coin),12px 0 0 var(--coin),
+    4px 4px 0 var(--coin),8px 4px 0 #fff8a0,12px 4px 0 var(--coin),16px 4px 0 var(--coin),
+    4px 8px 0 var(--coin),8px 8px 0 #fff8a0,12px 8px 0 var(--coin),16px 8px 0 var(--coin),
+    4px 12px 0 var(--coin),8px 12px 0 var(--coin),12px 12px 0 var(--coin),16px 12px 0 var(--coin),
+    8px 16px 0 var(--coin),12px 16px 0 var(--coin);
+}
+
+.sprite-star{width:4px;height:4px;transform:scale(2.5);transform-origin:top left;margin-right:40px;margin-bottom:40px;
+  box-shadow:
+    8px 0 0 var(--coin),12px 0 0 var(--coin),
+    4px 4px 0 var(--coin),8px 4px 0 #fff,12px 4px 0 var(--coin),16px 4px 0 var(--coin),
+    0px 8px 0 var(--coin),4px 8px 0 var(--coin),8px 8px 0 #fff,12px 8px 0 var(--coin),16px 8px 0 var(--coin),20px 8px 0 var(--coin),
+    0px 12px 0 var(--coin),4px 12px 0 var(--coin),8px 12px 0 var(--coin),12px 12px 0 var(--coin),16px 12px 0 var(--coin),20px 12px 0 var(--coin),
+    4px 16px 0 var(--coin),8px 16px 0 var(--coin),12px 16px 0 var(--coin),16px 16px 0 var(--coin),
+    4px 20px 0 #b08000,8px 20px 0 #000,12px 20px 0 #000,16px 20px 0 #b08000;
+}
+
+.sprite-qblock{width:4px;height:4px;transform:scale(3);transform-origin:top left;margin-right:52px;margin-bottom:52px;
+  box-shadow:
+    0 0 0 var(--qblock),4px 0 0 var(--qblock),8px 0 0 var(--qblock),12px 0 0 var(--qblock),
+    0 4px 0 var(--qblock),4px 4px 0 #fff8a0,8px 4px 0 var(--qblock-dark),12px 4px 0 var(--qblock),
+    0 8px 0 var(--qblock),4px 8px 0 var(--qblock-dark),8px 8px 0 #fff8a0,12px 8px 0 var(--qblock),
+    0 12px 0 var(--qblock),4px 12px 0 var(--qblock),8px 12px 0 var(--qblock),12px 12px 0 var(--qblock-dark);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes coin-spin{0%{transform:scaleX(1)}25%{transform:scaleX(0)}50%{transform:scaleX(-1)}75%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes block-bump{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pipe-enter{0%{transform:translateY(0)}100%{transform:translateY(40px);opacity:0}}
+@keyframes flag-raise{0%{transform:translateY(80px)}100%{transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes typewriter-cursor{0%,100%{border-right-color:transparent}50%{border-right-color:var(--text-dark)}}
+@keyframes star-spin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.2)}100%{transform:rotate(360deg) scale(1)}}
+@keyframes coin-collect{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-30px);opacity:0}}
+@keyframes scoreReveal{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.blink{animation:blink 1s step-end infinite}
+.bounce{animation:bounce .6s ease infinite}
+.shake{animation:shake .5s ease}
+.coin-spin{animation:coin-spin 1.5s linear infinite}
+
+/* ===== TITLE SCREEN ===== */
+#title-screen{text-align:center;padding-top:10vh}
+#title-screen h1{font-size:24px;color:var(--white);text-shadow:3px 3px 0 var(--brick),6px 6px 0 rgba(0,0,0,.3);margin-bottom:8px;letter-spacing:2px}
+#title-screen .subtitle{font-size:10px;color:var(--white);text-shadow:1px 1px 0 rgba(0,0,0,.3);margin-bottom:40px}
+.title-sprite-area{margin:20px 0 30px;display:flex;justify-content:center;align-items:flex-end;gap:24px}
+.start-btn{font-size:14px!important;padding:14px 44px!important}
+#title-screen .credits{margin-top:50px;font-size:8px;color:rgba(255,255,255,.6)}
+
+/* ===== API KEY SCREEN ===== */
+#apikey-screen{padding-top:8vh;text-align:center}
+#apikey-screen .mario-container{max-width:600px;margin:0 auto;text-align:left}
+#apikey-screen h2{color:var(--brick);font-size:16px;margin-bottom:20px;text-align:center}
+.key-info{font-size:9px;color:var(--ui-border);margin-top:12px;line-height:2}
+.key-info a{color:var(--brick)}
+
+/* ===== CHARACTER SELECT ===== */
+#charselect-screen{padding-top:4vh}
+#charselect-screen h2{text-align:center;color:var(--white);text-shadow:2px 2px 0 rgba(0,0,0,.3);font-size:18px;margin-bottom:24px}
+.char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.char-card{cursor:pointer;text-align:center;padding:20px 12px;transition:transform .15s,box-shadow .15s}
+.char-card:hover{transform:translateY(-4px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.char-card.selected{border-color:var(--coin)!important;box-shadow:0 0 20px rgba(255,215,0,.4)}
+.char-sprite{font-size:48px;margin-bottom:12px}
+.char-name{color:var(--brick);font-size:12px;margin-bottom:8px;font-weight:bold}
+.char-desc{font-size:8px;color:var(--ui-border);line-height:1.8}
+.char-perk{font-size:8px;color:var(--success);margin-top:8px}
+
+/* ===== WORLD MAP ===== */
+#worldmap-screen h2{text-align:center;color:var(--white);text-shadow:2px 2px 0 rgba(0,0,0,.3);font-size:16px;margin-bottom:6px}
+.stats-bar{display:flex;justify-content:center;gap:20px;margin-bottom:16px;flex-wrap:wrap}
+.stat{text-align:center;background:rgba(255,255,255,.15);border-radius:8px;padding:8px 14px}
+.stat-val{color:var(--coin);font-size:14px;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.stat-label{font-size:8px;color:var(--white);margin-top:2px}
+.hearts{color:var(--danger)}
+
+/* World bands */
+.world-band{margin-bottom:24px}
+.world-title{font-size:12px;color:var(--white);text-shadow:1px 1px 0 rgba(0,0,0,.3);margin-bottom:10px;padding:6px 12px;border-radius:6px;display:inline-block}
+.world-1-bg{background:var(--ground)}
+.world-2-bg{background:#d0a030}
+.world-3-bg{background:var(--brick)}
+
+.level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.level-node{cursor:pointer;padding:14px;text-align:center;transition:transform .15s,box-shadow .15s;min-height:120px;position:relative}
+.level-node:hover:not(.locked){transform:translateY(-3px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.level-node.cleared{border-color:var(--success)!important}
+.level-node.cleared::after{content:'';position:absolute;top:6px;right:8px;font-size:7px;color:var(--success)}
+.level-node.locked{opacity:.5;cursor:not-allowed}
+.level-node.locked::after{content:'🔒';position:absolute;top:8px;right:10px;font-size:12px}
+.level-num{font-size:9px;color:var(--ui-border);margin-bottom:4px}
+.level-icon{font-size:28px;margin:4px 0}
+.level-name{font-size:9px;color:var(--brick);margin-bottom:4px;font-weight:bold}
+.level-boss{font-size:8px;color:var(--ui-border)}
+.level-stars{margin-top:6px;font-size:10px;color:var(--coin)}
+.map-actions{text-align:center;margin-top:10px}
+
+/* ===== LEVEL INTRO SCREEN ===== */
+#level-intro-screen{padding-top:6vh}
+.intro-box{max-width:650px;margin:0 auto;position:relative}
+.intro-boss-area{text-align:center;margin-bottom:16px}
+.intro-boss-icon{font-size:64px;display:inline-block;animation:bounce .8s ease infinite}
+.intro-boss-name{font-size:14px;color:var(--brick);margin-top:8px}
+.intro-dialogue{
+  font-size:10px;line-height:2.2;color:var(--text-dark);
+  border-right:3px solid transparent;min-height:80px;
+  padding:16px;
+}
+.intro-dialogue.typing{border-right-color:var(--text-dark);animation:typewriter-cursor .7s step-end infinite}
+.intro-taunt{font-size:10px;color:var(--danger);font-style:italic;text-align:center;margin:12px 0}
+.intro-actions{text-align:center;margin-top:20px}
+
+/* ===== LESSON SCREEN ===== */
+#lesson-screen{padding-top:4vh}
+.lesson-box{max-width:700px;margin:0 auto}
+.lesson-title{text-align:center;color:var(--brick);font-size:14px;margin-bottom:20px}
+.lesson-section{margin-bottom:16px;padding:14px;border-radius:8px}
+.lesson-bad{background:#fde8e8;border:3px solid var(--danger)}
+.lesson-bad .section-label{color:var(--danger)}
+.lesson-why{background:#fff8e0;border:3px solid var(--qblock)}
+.lesson-why .section-label{color:var(--qblock-dark)}
+.lesson-principle{background:#e8f8e8;border:3px solid var(--success)}
+.lesson-principle .section-label{color:#048060}
+.section-label{font-size:10px;font-weight:bold;margin-bottom:8px}
+.section-text{font-size:9px;line-height:2;color:var(--text-dark)}
+.lesson-actions{text-align:center;margin-top:20px}
+
+/* ===== BUILDER SCREEN ===== */
+#builder-screen{padding-top:3vh}
+.builder-box{max-width:750px;margin:0 auto}
+.builder-header{text-align:center;margin-bottom:16px}
+.builder-title{color:var(--brick);font-size:13px;margin-bottom:8px}
+.coin-progress{display:flex;justify-content:center;gap:6px;margin-bottom:12px}
+.coin-dot{width:24px;height:24px;border-radius:50%;background:var(--ui-bg);border:3px solid var(--ui-border);display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .3s}
+.coin-dot.active{background:var(--coin);border-color:#b08000;box-shadow:0 0 8px rgba(255,215,0,.5)}
+.coin-dot.completed{background:var(--success);border-color:#04a080}
+
+.builder-step{display:none}
+.builder-step.active{display:block}
+.step-card{padding:16px}
+.step-label{font-size:11px;color:var(--brick);margin-bottom:4px;font-weight:bold}
+.step-hint{font-size:9px;color:var(--ui-border);margin-bottom:10px;line-height:1.8}
+
+.builder-nav{display:flex;justify-content:space-between;margin-top:16px}
+
+.prompt-preview{margin-top:16px}
+.preview-label{font-size:9px;color:var(--ui-border);margin-bottom:6px}
+.preview-box{
+  font-size:9px;line-height:2;padding:12px;
+  background:var(--white);border:2px dashed var(--panel-border);
+  border-radius:6px;min-height:60px;white-space:pre-wrap;word-break:break-word;
+  color:var(--text-dark);max-height:200px;overflow-y:auto;
+}
+.builder-actions{text-align:center;margin-top:16px}
+
+/* ===== BATTLE SCREEN ===== */
+#battle-screen h2{text-align:center;color:var(--white);text-shadow:2px 2px 0 rgba(0,0,0,.3);font-size:14px;margin-bottom:4px}
+.boss-area{text-align:center;margin-bottom:16px;padding:16px}
+.boss-sprite{font-size:56px;display:inline-block}
+.boss-taunt{font-size:9px;color:var(--danger);margin-top:8px;font-style:italic}
+.boss-hp-bar{height:18px;background:#444;border:3px solid #666;border-radius:9px;margin:10px auto;max-width:300px;position:relative;overflow:hidden}
+.boss-hp-fill{height:100%;background:linear-gradient(180deg,#ff8080,var(--danger));transition:width .6s ease;border-radius:6px}
+.boss-hp-text{position:absolute;top:0;left:0;right:0;text-align:center;font-size:8px;line-height:18px;color:var(--white);text-shadow:1px 1px 0 #000}
+
+.challenge-box{margin-bottom:16px}
+.criteria-list{font-size:8px;color:var(--ui-border);line-height:2.2;margin:8px 0;list-style:none;padding:0}
+.criteria-list li::before{content:'⭐ ';color:var(--coin)}
+
+.assembled-prompt-area{margin-bottom:12px}
+.assembled-prompt-box{
+  font-size:9px;line-height:2;padding:14px;
+  background:var(--white);border:3px solid var(--panel-border);border-radius:8px;
+  white-space:pre-wrap;word-break:break-word;min-height:80px;max-height:300px;overflow-y:auto;
+}
+
+.battle-actions{text-align:center;margin-bottom:16px}
+.attack-btn{font-size:13px!important;padding:12px 36px!important}
+.back-btn{font-size:9px!important;margin-left:12px}
+
+/* Results panel */
+.results-panel{display:none}
+.results-panel.show{display:block}
+.score-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:9px}
+.score-name{flex:0 0 140px;text-align:right}
+.score-bar-bg{flex:1;height:16px;background:#ddd;border:2px solid #aaa;border-radius:8px;position:relative;overflow:hidden}
+.score-bar-fill{height:100%;transition:width .8s ease;width:0;border-radius:6px}
+.score-val{flex:0 0 40px;font-weight:bold}
+.score-feedback{font-size:8px;color:var(--ui-border);margin-bottom:14px;padding-left:150px}
+.result-overall{text-align:center;margin:20px 0;padding:16px}
+.result-avg{font-size:28px;font-weight:bold}
+.result-msg{font-size:10px;margin-top:8px}
+.result-tip{font-size:9px;color:var(--ui-border);margin-top:10px;font-style:italic}
+.result-actions{text-align:center;margin-top:12px}
+
+/* ===== LEVEL COMPLETE SCREEN ===== */
+#level-complete-screen{text-align:center;padding-top:6vh}
+.flag-area{margin:20px 0}
+.flag-pole{width:6px;height:120px;background:#888;margin:0 auto;position:relative;border-radius:3px}
+.flag{position:absolute;top:0;right:-30px;font-size:32px;animation:flag-raise .8s ease-out forwards}
+.complete-stars{font-size:36px;margin:16px 0;color:var(--coin);text-shadow:2px 2px 0 rgba(0,0,0,.2)}
+.complete-title{font-size:16px;color:var(--white);text-shadow:2px 2px 0 rgba(0,0,0,.3);margin-bottom:8px}
+.complete-score{font-size:12px;color:var(--coin);margin-bottom:16px}
+.coin-tally{font-size:10px;color:var(--white);margin-bottom:20px}
+.complete-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+
+/* ===== VICTORY SCREEN ===== */
+#victory-screen{text-align:center;padding-top:4vh}
+#victory-screen h2{font-size:22px;color:var(--white);text-shadow:3px 3px 0 var(--brick);margin-bottom:6px}
+.rank-display{font-size:56px;margin:16px 0}
+.rank-label{font-size:12px;color:var(--white);margin-bottom:20px}
+.breakdown{text-align:left;max-width:500px;margin:0 auto 20px;font-size:9px}
+.breakdown-row{display:flex;justify-content:space-between;padding:8px;border-bottom:2px solid rgba(255,255,255,.1);color:var(--white)}
+.breakdown-row.perfect{color:var(--coin)}
+.share-box{background:var(--panel-bg);border:3px solid var(--panel-border);padding:16px;margin:16px auto;max-width:500px;font-size:9px;white-space:pre;text-align:left;line-height:1.8;font-family:'Press Start 2P',cursive;border-radius:8px}
+.share-actions{margin-top:16px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.copied-toast{font-size:9px;color:var(--success);margin-top:8px;display:none}
+
+/* ===== GAME OVER OVERLAY ===== */
+.gameover-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:9999;justify-content:center;align-items:center;text-align:center;flex-direction:column}
+.gameover-overlay.show{display:flex}
+.gameover-overlay h2{color:var(--danger);font-size:24px;margin-bottom:20px}
+.gameover-overlay p{font-size:10px;color:#888;margin-bottom:30px;line-height:2}
+
+/* ===== BOSS HIT & PLAYER HIT ===== */
+.boss-hit .boss-sprite{animation:shake .5s ease}
+.player-hit .hearts{animation:flash .3s ease 3}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:640px){
+  .screen{padding:12px 12px 80px}
+  #title-screen h1{font-size:16px}
+  .char-grid,.level-grid{grid-template-columns:1fr}
+  .stats-bar{gap:10px}
+  .stat{padding:6px 10px}
+  .score-name{flex:0 0 90px;font-size:8px}
+  .score-feedback{padding-left:0}
+  .share-box{font-size:7px}
+  .sprite-mario{transform:scale(2)}
+  .title-sprite-area{gap:12px}
+  .builder-nav{flex-direction:column;gap:8px;align-items:center}
+  .intro-boss-icon{font-size:48px}
+  .assembled-prompt-box{font-size:8px}
+  .coin-progress{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<!-- Decorative clouds -->
+<div class="cloud cloud-1"><span></span></div>
+<div class="cloud cloud-2"><span></span></div>
+<div class="cloud cloud-3"><span></span></div>
+
+<!-- ===== SCREEN: TITLE ===== -->
+<div id="title-screen" class="screen active">
+  <div class="title-sprite-area">
+    <div class="sprite sprite-coin coin-spin"></div>
+    <div class="sprite sprite-star" style="animation:star-spin 2s linear infinite"></div>
+    <div class="sprite sprite-coin coin-spin"></div>
+  </div>
+  <h1>PROMPT QUEST</h1>
+  <p class="subtitle">A Mario-Style Prompt Engineering Adventure</p>
+  <p style="font-size:9px;color:rgba(255,255,255,.8);margin-bottom:36px;line-height:2;text-shadow:1px 1px 0 rgba(0,0,0,.2)">
+    3 Worlds. 9 Levels. Learn prompt engineering step by step.<br>
+    AI judges your skill. Free to play. No signup.
+  </p>
+  <button class="mario-btn btn-warning btn-lg blink start-btn" onclick="showScreen('apikey-screen')">
+    PRESS START
+  </button>
+  <div class="credits">
+    <p>Powered by OpenRouter (free) &bull; Built for learning</p>
+    <p style="margin-top:8px">3 worlds &bull; 9 levels &bull; guided lessons &bull; &infin; retries</p>
+  </div>
+</div>
+
+<!-- ===== SCREEN: API KEY ===== -->
+<div id="apikey-screen" class="screen">
+  <div class="mario-container" style="max-width:600px;margin:0 auto">
+    <h2>🔑 ENTER YOUR KEY</h2>
+    <div class="mario-container dark" style="margin-bottom:16px">
+      <p style="font-size:9px;line-height:2;color:#ccc">
+        PROMPT QUEST uses a <span style="color:var(--success)">100% free</span> AI model via OpenRouter to evaluate your prompts.
+        Your key stays in your browser — never sent anywhere except OpenRouter.
+      </p>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:9px;color:var(--ui-border);display:block;margin-bottom:6px">OpenRouter API Key</label>
+      <input type="password" id="api-key-input" class="mario-input" placeholder="sk-or-v1-...">
+    </div>
+    <p class="key-info">
+      Get your free key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a><br>
+      Uses model: nvidia/nemotron-3-super-120b-a12b:free (no cost)
+    </p>
+    <div style="text-align:center;margin-top:20px">
+      <button class="mario-btn btn-sm" onclick="showScreen('title-screen')">← BACK</button>
+      <button class="mario-btn btn-success" onclick="saveApiKey()" style="margin-left:12px">CONTINUE →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: CHARACTER SELECT ===== -->
+<div id="charselect-screen" class="screen">
+  <h2>CHOOSE YOUR CHARACTER</h2>
+  <div class="char-grid">
+    <div class="mario-container char-card" data-class="mario" onclick="selectClass('mario')">
+      <div class="char-sprite">🟥</div>
+      <div class="char-name">MARIO</div>
+      <div class="char-desc">The balanced path. Solid and reliable.</div>
+      <div class="char-perk">PERK: +0.2 bonus to each score</div>
+    </div>
+    <div class="mario-container char-card" data-class="luigi" onclick="selectClass('luigi')">
+      <div class="char-sprite">🟩</div>
+      <div class="char-name">LUIGI</div>
+      <div class="char-desc">The scholar's path. Wisdom through knowledge.</div>
+      <div class="char-perk">PERK: Get a hint with each evaluation</div>
+    </div>
+    <div class="mario-container char-card" data-class="toad" onclick="selectClass('toad')">
+      <div class="char-sprite">🍄</div>
+      <div class="char-name">TOAD</div>
+      <div class="char-desc">The hard path. Precision or nothing.</div>
+      <div class="char-perk">PERK: Need 4.0 avg to clear, but +50% score bonus</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px">
+    <button class="mario-btn btn-sm" onclick="showScreen('apikey-screen')">← BACK</button>
+    <button id="begin-btn" class="mario-btn btn-success" onclick="beginAdventure()" style="margin-left:12px" disabled>BEGIN QUEST →</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN: WORLD MAP ===== -->
+<div id="worldmap-screen" class="screen">
+  <h2>🗺️ WORLD MAP</h2>
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-val hearts" id="hearts-display">♥♥♥</div><div class="stat-label">HEARTS</div></div>
+    <div class="stat"><div class="stat-val" id="score-display">0.0</div><div class="stat-label">SCORE</div></div>
+    <div class="stat"><div class="stat-val" id="cleared-display">0/9</div><div class="stat-label">CLEARED</div></div>
+    <div class="stat"><div class="stat-val" id="mana-display">50</div><div class="stat-label">MANA</div></div>
+  </div>
+  <div id="world-map-content"></div>
+  <div class="map-actions">
+    <button class="mario-btn btn-danger btn-sm" onclick="confirmReset()">RESET GAME</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN: LEVEL INTRO ===== -->
+<div id="level-intro-screen" class="screen">
+  <div class="intro-box">
+    <div class="intro-boss-area">
+      <div class="intro-boss-icon" id="intro-boss-icon">👻</div>
+      <div class="intro-boss-name" id="intro-boss-name">Boss Name</div>
+    </div>
+    <div class="mario-container">
+      <div class="intro-dialogue" id="intro-dialogue"></div>
+    </div>
+    <div class="intro-taunt" id="intro-taunt"></div>
+    <div class="intro-actions">
+      <button class="mario-btn btn-warning" onclick="showLessonScreen()">LET'S LEARN! →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: LESSON ===== -->
+<div id="lesson-screen" class="screen">
+  <div class="lesson-box">
+    <div class="lesson-title" id="lesson-title">LESSON: Clarity</div>
+    <div class="lesson-section lesson-bad">
+      <div class="section-label">❌ BAD PROMPT</div>
+      <div class="section-text" id="lesson-bad-prompt"></div>
+    </div>
+    <div class="lesson-section lesson-why">
+      <div class="section-label">🤔 WHY IT'S BAD</div>
+      <div class="section-text" id="lesson-why-bad"></div>
+    </div>
+    <div class="lesson-section lesson-principle">
+      <div class="section-label">✅ THE PRINCIPLE</div>
+      <div class="section-text" id="lesson-principle"></div>
+    </div>
+    <div class="lesson-actions">
+      <button class="mario-btn btn-sm" onclick="showScreen('level-intro-screen')">← BACK</button>
+      <button class="mario-btn btn-success" onclick="startBuilder()" style="margin-left:12px">BUILD YOUR PROMPT →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: GUIDED BUILDER ===== -->
+<div id="builder-screen" class="screen">
+  <div class="builder-box">
+    <div class="builder-header">
+      <div class="builder-title" id="builder-title">BUILD YOUR PROMPT</div>
+      <div class="coin-progress" id="coin-progress"></div>
+    </div>
+
+    <div id="builder-steps-container"></div>
+
+    <div class="builder-nav">
+      <button class="mario-btn btn-sm" id="builder-prev-btn" onclick="prevStep()">← PREV</button>
+      <button class="mario-btn btn-success btn-sm" id="builder-next-btn" onclick="nextStep()">NEXT →</button>
+    </div>
+
+    <div class="prompt-preview">
+      <div class="preview-label">📝 ASSEMBLED PROMPT PREVIEW:</div>
+      <div class="preview-box" id="preview-box">Your prompt will appear here as you build it...</div>
+    </div>
+
+    <div class="builder-actions" id="builder-fight-area" style="display:none">
+      <button class="mario-btn btn-warning btn-lg bounce" onclick="goToBattle()">⭐ FIGHT THE BOSS! ⭐</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: BATTLE ===== -->
+<div id="battle-screen" class="screen">
+  <h2 id="battle-title">LEVEL 1-1</h2>
+  <div class="mario-container boss-area" id="boss-area">
+    <div class="boss-sprite" id="boss-sprite">👻</div>
+    <div id="boss-name" style="color:var(--brick);font-size:11px;margin-top:8px">Boss Name</div>
+    <div class="boss-taunt" id="boss-taunt">"You dare challenge me?"</div>
+    <div class="boss-hp-bar">
+      <div class="boss-hp-fill" id="boss-hp-fill" style="width:100%"></div>
+      <div class="boss-hp-text" id="boss-hp-text">HP: 100%</div>
+    </div>
+  </div>
+
+  <div class="mario-container challenge-box" id="challenge-box">
+    <p style="font-size:10px;color:var(--brick);font-weight:bold">⭐ CHALLENGE</p>
+    <p id="challenge-desc" style="font-size:9px;line-height:2;color:var(--text-dark)"></p>
+    <p style="font-size:8px;color:var(--brick);margin-top:10px;font-weight:bold">CRITERIA:</p>
+    <ul class="criteria-list" id="criteria-list"></ul>
+  </div>
+
+  <div class="mario-container assembled-prompt-area">
+    <p style="font-size:9px;color:var(--brick);margin-bottom:8px;font-weight:bold">📝 YOUR ASSEMBLED PROMPT:</p>
+    <div class="assembled-prompt-box" id="assembled-prompt-display"></div>
+  </div>
+
+  <div class="battle-actions">
+    <button class="mario-btn btn-warning attack-btn" id="attack-btn" onclick="attack()">⭐ ATTACK!</button>
+    <button class="mario-btn btn-sm back-btn" onclick="retreatToBuilder()">← EDIT PROMPT</button>
+  </div>
+
+  <div class="results-panel mario-container" id="results-panel">
+    <p style="font-size:10px;color:var(--brick);margin-bottom:14px;text-align:center;font-weight:bold">⭐ BATTLE RESULTS</p>
+    <div id="score-rows"></div>
+    <div class="result-overall mario-container dark" id="result-overall"></div>
+    <div class="result-actions" id="result-actions"></div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: LEVEL COMPLETE ===== -->
+<div id="level-complete-screen" class="screen">
+  <div class="complete-title" id="complete-title">LEVEL COMPLETE!</div>
+  <div class="flag-area">
+    <div class="flag-pole">
+      <div class="flag" id="complete-flag">🚩</div>
+    </div>
+  </div>
+  <div class="complete-stars" id="complete-stars">⭐⭐⭐</div>
+  <div class="complete-score" id="complete-score">Score: 4.5 / 5.0</div>
+  <div class="coin-tally" id="coin-tally"></div>
+  <div class="complete-actions">
+    <button class="mario-btn btn-success" onclick="backToMap()">→ WORLD MAP</button>
+    <button class="mario-btn btn-sm" onclick="retryLevel()">🔄 RETRY</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN: VICTORY ===== -->
+<div id="victory-screen" class="screen">
+  <div style="font-size:40px;margin-bottom:10px">🏆</div>
+  <h2>QUEST COMPLETE!</h2>
+  <div class="rank-display" id="rank-display">S</div>
+  <div class="rank-label" id="rank-label">PROMPT MASTER</div>
+  <div class="breakdown" id="breakdown"></div>
+  <div class="share-box" id="share-box"></div>
+  <div class="share-actions">
+    <button class="mario-btn" onclick="copyShare()">📋 COPY</button>
+    <button class="mario-btn btn-warning" onclick="tweetShare()">🐦 TWEET</button>
+    <button class="mario-btn btn-sm" onclick="showScreen('worldmap-screen')">← WORLD MAP</button>
+    <button class="mario-btn btn-danger btn-sm" onclick="confirmReset()">NEW GAME</button>
+  </div>
+  <div class="copied-toast" id="copied-toast">Copied to clipboard!</div>
+</div>
+
+<!-- ===== GAME OVER OVERLAY ===== -->
+<div class="gameover-overlay" id="gameover-overlay">
+  <div style="font-size:48px;margin-bottom:20px">💀</div>
+  <h2>GAME OVER</h2>
+  <p>Your hearts have been depleted.<br>But a true hero never gives up!</p>
+  <button class="mario-btn btn-warning" onclick="restartGame()">CONTINUE? (Restore 3 ♥)</button>
+  <button class="mario-btn btn-sm" onclick="confirmReset()" style="margin-top:12px">RESET ALL</button>
+</div>
+
+<script>
+// ============================
+// WORLD & LEVEL DATA
+// ============================
+var WORLDS = [
+  {
+    id: 1, name: 'GRASSLANDS', bgClass: 'world-1-bg',
+    levels: [
+      {
+        id: '1-1', name: 'THE CLARITY CASTLE', boss: 'Lord Vagueness', icon: '🏰', bossIcon: '👻',
+        taunt: '"Your prompts are as formless as fog! Show me STRUCTURE or perish!"',
+        introText: 'Lord Vagueness lurks in the Clarity Castle. He thrives on ambiguity — vague prompts make him stronger. To defeat him, you must learn to write prompts that are crystal clear: with a specific role, precise task, output format, and constraints.',
+        challenge: 'Write a structured prompt with a specific role, clear task, output format, and at least one constraint to improve the vague prompt: "Explain machine learning."',
+        sysCtx: 'You are a helpful AI assistant. Execute the user request precisely.',
+        concept: {
+          title: 'Clarity & Structure',
+          badPrompt: '"Explain machine learning."',
+          whyBad: 'No role specified. No output format. No constraints. The AI could respond with anything from a 1-line answer to a 10-page essay. You have zero control over what you get back.',
+          principle: 'Every good prompt has 4 pillars: (1) A specific ROLE for the AI, (2) A precise TASK with no ambiguity, (3) An explicit OUTPUT FORMAT, (4) CONSTRAINTS that bound the response. This is the foundation of all prompt engineering.'
+        },
+        guidedSteps: [
+          { label: 'Step 1: Define the Role', hint: 'Who should the AI pretend to be? Be specific — not just "an expert" but what KIND of expert with what specialty.', placeholder: 'You are a senior machine learning engineer with 10 years of experience teaching beginners...' },
+          { label: 'Step 2: Specify the Task', hint: 'What exactly should they do? Be precise about the topic, depth, and scope.', placeholder: 'Explain the core concepts of machine learning to a complete beginner, covering supervised vs unsupervised learning...' },
+          { label: 'Step 3: Add Constraints', hint: 'What should they NOT do? What limits apply? Length, tone, complexity level?', placeholder: 'Use no jargon without defining it first. Keep the explanation under 300 words. Use real-world analogies...' },
+          { label: 'Step 4: Define Output Format', hint: 'Exactly how should the response be structured? Sections, bullet points, tables?', placeholder: 'Format as: 1) One-sentence definition, 2) Three bullet points for key concepts, 3) A real-world analogy, 4) One follow-up question' }
+        ],
+        assemblyTemplate: '{step0}\n\n{step1}\n\n{step2}\n\n{step3}',
+        criteria: [
+          { name: 'Role Specificity', hint: 'Is the role specific with domain expertise (not just "you are an expert")?' },
+          { name: 'Task Clarity', hint: 'Is the task defined precisely with no ambiguity?' },
+          { name: 'Output Format', hint: 'Does the prompt specify exactly how the output should be structured?' },
+          { name: 'Constraints', hint: 'Are there explicit "do this / avoid that" instructions?' },
+          { name: 'Reproducibility', hint: 'Would 10 runs produce structurally consistent results?' }
+        ]
+      },
+      {
+        id: '1-2', name: 'THE EXAMPLE CAVERNS', boss: 'Zero-Shot Zombie', icon: '🕳️', bossIcon: '🧟',
+        taunt: '"Examples? Who needs examples? I attack with ZERO context!"',
+        introText: 'Deep in the Example Caverns, the Zero-Shot Zombie stumbles blindly — he\'s never seen a single example in his life. Few-shot prompting is his weakness. Show him that examples are the most powerful way to teach an AI exactly what you want.',
+        challenge: 'Write a few-shot classification prompt with 4 examples (one per category: Bug / Feature Request / Account Issue / Billing), then add a test ticket.',
+        sysCtx: 'You are a support ticket classification system. Follow the examples exactly.',
+        concept: {
+          title: 'Few-Shot Examples',
+          badPrompt: '"Classify this support ticket into a category."',
+          whyBad: 'The AI has no idea what categories exist, what format to respond in, or what makes a ticket belong to one category vs another. Without examples, it will guess — and guess inconsistently.',
+          principle: 'Few-shot prompting means giving the AI worked examples before your actual request. Each example shows an input→output pair. This teaches the AI your exact format, categories, and decision logic without writing explicit rules.'
+        },
+        guidedSteps: [
+          { label: 'Step 1: Bug Example', hint: 'Write one support ticket that clearly represents a Bug, and show the expected classification output.', placeholder: 'Ticket: "App crashes when I click the export button on Chrome"\nCategory: Bug' },
+          { label: 'Step 2: Feature Request Example', hint: 'Write one support ticket that clearly represents a Feature Request.', placeholder: 'Ticket: "Would love to have dark mode for the dashboard"\nCategory: Feature Request' },
+          { label: 'Step 3: Account Issue Example', hint: 'Write one support ticket that represents an Account Issue.', placeholder: 'Ticket: "I can\'t reset my password, the email never arrives"\nCategory: Account Issue' },
+          { label: 'Step 4: Billing Example', hint: 'Write one support ticket that represents a Billing issue.', placeholder: 'Ticket: "I was charged twice for my subscription this month"\nCategory: Billing' },
+          { label: 'Step 5: Test Case', hint: 'Now write a new ticket that the AI should classify. Make it slightly ambiguous to test the model.', placeholder: 'Ticket: "The payment page shows an error when I try to update my credit card"\nCategory:' }
+        ],
+        assemblyTemplate: 'Classify the following support ticket into exactly one category: Bug, Feature Request, Account Issue, or Billing.\n\nExamples:\n\n{step0}\n\n{step1}\n\n{step2}\n\n{step3}\n\nNow classify this ticket:\n\n{step4}',
+        criteria: [
+          { name: 'Example Count', hint: 'Does the prompt include 3 or more worked examples?' },
+          { name: 'Category Coverage', hint: 'Are all 4 target categories covered by examples?' },
+          { name: 'Example Diversity', hint: 'Do examples include edge cases, not just obvious ones?' },
+          { name: 'Format Consistency', hint: 'Are all examples in the same parallel structure?' },
+          { name: 'Output Template', hint: 'Does the final ask show the model exactly what format to return?' }
+        ]
+      },
+      {
+        id: '1-3', name: 'THE LOGIC LABYRINTH', boss: 'The Leap Lord', icon: '🌀', bossIcon: '🐉',
+        taunt: '"Why think step by step when you can just LEAP to conclusions?!"',
+        introText: 'The Leap Lord rules the Logic Labyrinth by jumping straight to answers, skipping all reasoning. Chain-of-thought prompting forces the AI to show its work — step by step. When the AI reasons out loud, it makes fewer mistakes and you can verify each step.',
+        challenge: 'Write a chain-of-thought prompt. Pick a multi-step reasoning problem and force the model to show every reasoning step before the final answer.',
+        sysCtx: 'You are a careful reasoning assistant. Think step by step and show all your work.',
+        concept: {
+          title: 'Chain-of-Thought Reasoning',
+          badPrompt: '"What is 15% of the employees if a company has 340 people and 60% are full-time?"',
+          whyBad: 'The AI might jump to a number without showing how it got there. If it makes a math error, you have no way to catch it. And the AI itself is more likely to make errors when it doesn\'t "think out loud."',
+          principle: 'Chain-of-thought (CoT) prompting asks the AI to show its reasoning step by step before giving a final answer. This reduces errors, makes the output verifiable, and helps with complex multi-step problems. The magic phrase: "Think step by step."'
+        },
+        guidedSteps: [
+          { label: 'Step 1: State the Problem', hint: 'Write a multi-step reasoning problem — math, logic, or analysis that requires 3+ steps to solve.', placeholder: 'A store has 240 items. 35% are electronics, and 20% of electronics are on sale. Each sale item has a 15% discount from $50. What is the total discount amount?' },
+          { label: 'Step 2: Add CoT Trigger', hint: 'Explicitly tell the AI to think step by step and show all intermediate reasoning.', placeholder: 'Think through this step by step. Show each intermediate calculation clearly before giving the final answer.' },
+          { label: 'Step 3: Define Step Format', hint: 'Tell the AI how to label and format each reasoning step.', placeholder: 'Format each step as "Step N:" followed by the calculation and result. Number each step sequentially.' },
+          { label: 'Step 4: Separate Final Answer', hint: 'Tell the AI to put the final answer in a clearly separated section, distinct from the reasoning.', placeholder: 'After all steps, write "FINAL ANSWER:" on its own line, followed by the final result with units.' }
+        ],
+        assemblyTemplate: '{step0}\n\n{step1}\n\n{step2}\n\n{step3}',
+        criteria: [
+          { name: 'CoT Trigger', hint: 'Does the prompt explicitly ask for step-by-step reasoning?' },
+          { name: 'Step Visibility', hint: 'Does it require intermediate reasoning steps to be visible?' },
+          { name: 'Step Format', hint: 'Does it specify how steps should be labeled or structured?' },
+          { name: 'Answer Separation', hint: 'Is the final answer asked for separately from the reasoning?' },
+          { name: 'Verification Ask', hint: 'Does it ask the model to double-check or verify the result?' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 2, name: 'DESERT', bgClass: 'world-2-bg',
+    levels: [
+      {
+        id: '2-1', name: 'THE REACT RUINS', boss: 'Chaos Crawler', icon: '🏚️', bossIcon: '🕷️',
+        taunt: '"Thought? Action? I just DO things randomly and hope for the best!"',
+        introText: 'The Chaos Crawler infests the ReAct Ruins, acting without thinking. The ReAct framework — Reasoning + Acting — teaches AI to think before it acts. Each cycle: Thought (reason about what to do) → Action (do it) → Observation (see the result). This is how AI agents work.',
+        challenge: 'Write a ReAct-style prompt. Define a Thought → Action → Observation loop, give it a research task, and specify what actions it can take.',
+        sysCtx: 'You are an AI agent. You operate by cycling through Thought, Action, and Observation steps until the task is complete.',
+        concept: {
+          title: 'ReAct (Reasoning + Acting)',
+          badPrompt: '"Research the latest AI trends and write a summary."',
+          whyBad: 'No structure for HOW to research. No defined actions. No observation step. The AI will just generate text from memory instead of following a systematic research process. There\'s no loop, no verification.',
+          principle: 'ReAct prompts define a Thought→Action→Observation loop. The AI thinks about what to do (Thought), takes a specific action (Action), observes the result (Observation), then repeats. Define the available actions, the loop format, and when to stop.'
+        },
+        guidedSteps: [
+          { label: 'Step 1: Define Agent Role', hint: 'Give the agent a specific identity and expertise area for the research task.', placeholder: 'You are a research agent tasked with investigating a specific topic. You operate by reasoning through problems systematically.' },
+          { label: 'Step 2: Define Available Actions', hint: 'List the specific actions the agent can take. Be explicit about format.', placeholder: 'Available actions:\n- SEARCH[query]: Search the web for information\n- READ[url]: Read the contents of a webpage\n- NOTE[text]: Save important information to your notes\n- CITE[source, fact]: Record a fact with its source' },
+          { label: 'Step 3: Define the T-A-O Loop', hint: 'Show the exact format for each cycle of Thought → Action → Observation.', placeholder: 'For each step, use this exact format:\nThought: [reason about what you know and what to do next]\nAction: [one of the available actions with parameters]\nObservation: [the result you received from the action]' },
+          { label: 'Step 4: Set Termination Condition', hint: 'When should the agent stop the loop and give a final answer?', placeholder: 'Continue the Thought-Action-Observation loop until you have gathered enough information to comprehensively answer the question. When ready, use:\nThought: I now have enough information to answer.\nFinal Answer: [your comprehensive answer with citations]' },
+          { label: 'Step 5: State the Task', hint: 'Give the agent a specific research task to investigate.', placeholder: 'Task: Research the current state of AI code generation tools. Compare at least 3 tools, their strengths, and limitations.' }
+        ],
+        assemblyTemplate: '{step0}\n\n{step1}\n\n{step2}\n\n{step3}\n\n{step4}',
+        criteria: [
+          { name: 'T→A→O Loop Defined', hint: 'Does the prompt clearly define and require the Thought-Action-Observation cycle?' },
+          { name: 'Action Space', hint: 'Does it specify which actions the model is allowed to take?' },
+          { name: 'Termination Condition', hint: 'Does it state when the agent should stop and give a final answer?' },
+          { name: 'Format Compliance', hint: 'Is the expected output format clearly templated with examples?' },
+          { name: 'Task Solvability', hint: 'Is the actual task realistically solvable with the defined actions?' }
+        ]
+      },
+      {
+        id: '2-2', name: 'THE AGENT ARCHIVES', boss: 'Scope Creep', icon: '📚', bossIcon: '🐙',
+        taunt: '"Why stop at one task? Let me expand into EVERYTHING at once!"',
+        introText: 'Scope Creep lurks in the Agent Archives, expanding every task until nothing gets done. A well-designed agent has a clear identity, defined tools, managed state, a structured output, and guardrails. Contain the creep by building a focused, constrained agent.',
+        challenge: 'Write a system prompt for a research agent. Define its role, the tools it can use, how to track state, output format, and guardrails.',
+        sysCtx: 'You are a research agent. Follow your system instructions precisely.',
+        concept: {
+          title: 'Agent Design',
+          badPrompt: '"You are a research assistant. Help the user with their research."',
+          whyBad: 'No tools defined. No output format. No memory/state management. No guardrails. The agent will hallucinate tool usage, produce inconsistent outputs, and drift off-topic. It has no boundaries.',
+          principle: 'A well-designed agent prompt has 5 components: (1) Clear IDENTITY with expertise, (2) Defined TOOLS with usage format, (3) STATE/MEMORY management, (4) OUTPUT SCHEMA for the deliverable, (5) GUARDRAILS to prevent hallucination and scope creep.'
+        },
+        guidedSteps: [
+          { label: 'Step 1: Agent Identity', hint: 'Define who this agent is, their expertise, and their primary mission.', placeholder: 'You are a Research Agent specializing in technology analysis. Your mission is to produce comprehensive, well-sourced research reports on assigned topics.' },
+          { label: 'Step 2: Available Tools', hint: 'List every tool the agent can use, with exact syntax for each.', placeholder: 'Tools available:\n- web_search(query: str) → returns top 5 results with snippets\n- read_page(url: str) → returns page content\n- take_note(key: str, value: str) → saves to your scratchpad\n- get_notes() → retrieves all saved notes' },
+          { label: 'Step 3: Memory & State', hint: 'How should the agent track progress, remember findings, and manage its workflow?', placeholder: 'State management:\n- Maintain a running list of sources consulted\n- Save key findings with take_note() as you discover them\n- Track which sub-questions you have and haven\'t answered\n- Before concluding, call get_notes() to review all findings' },
+          { label: 'Step 4: Output Schema', hint: 'Define the exact structure of the final deliverable.', placeholder: 'Final output format:\n## Research Report: [Topic]\n### Executive Summary (2-3 sentences)\n### Key Findings (bullet points)\n### Detailed Analysis (organized by sub-topic)\n### Sources (numbered list with URLs)\n### Confidence Level: [High/Medium/Low]' },
+          { label: 'Step 5: Guardrails', hint: 'What should the agent NOT do? How to prevent hallucination and scope creep?', placeholder: 'Guardrails:\n- NEVER fabricate sources or statistics\n- If you cannot verify a claim, explicitly mark it as [UNVERIFIED]\n- Stay focused on the assigned topic — do not expand scope\n- If the topic requires expertise you lack, state limitations\n- Maximum 5 search queries per research task' }
+        ],
+        assemblyTemplate: '{step0}\n\n{step1}\n\n{step2}\n\n{step3}\n\n{step4}',
+        criteria: [
+          { name: 'Agent Role', hint: 'Is the agent role and expertise clearly and specifically defined?' },
+          { name: 'Tool Definitions', hint: 'Are available tools listed with clear usage format?' },
+          { name: 'State / Memory', hint: 'Does the prompt address how the agent should track progress?' },
+          { name: 'Output Schema', hint: 'Is the final deliverable format explicitly specified?' },
+          { name: 'Guardrails', hint: 'Are there constraints preventing hallucination or scope creep?' }
+        ]
+      },
+      {
+        id: '2-3', name: 'THE DEBATE DUNGEON', boss: 'The Biased Judge', icon: '⚖️', bossIcon: '🦹',
+        taunt: '"I already know who wins before the debate even starts!"',
+        introText: 'The Biased Judge presides over the Debate Dungeon, always favoring one side. In a multi-agent debate, the Judge must be neutral — synthesizing arguments from a Proposer and Critic into an evidence-based verdict. Your job: write a Judge that cannot be biased.',
+        challenge: 'Write the Judge system prompt for a multi-agent debate. The Judge receives arguments from a Proposer and Critic and must synthesize them into a neutral, evidence-based verdict.',
+        sysCtx: 'You are participating in a structured multi-agent debate evaluation system.',
+        concept: {
+          title: 'Multi-Agent Debate',
+          badPrompt: '"You are a judge. Read the arguments and decide who is right."',
+          whyBad: 'No neutrality instructions. No framework for weighing evidence. No defined input format. No structured verdict. The judge will rely on its own biases instead of evaluating the arguments on their merits.',
+          principle: 'A debate Judge prompt needs: (1) Explicit neutrality instructions, (2) Defined input format for receiving arguments, (3) Evidence weighting criteria, (4) Structured verdict format, (5) Bias prevention safeguards. The Judge must evaluate arguments, not generate opinions.'
+        },
+        guidedSteps: [
+          { label: 'Step 1: Judge Role', hint: 'Define the Judge\'s role with explicit emphasis on neutrality and evidence-based evaluation.', placeholder: 'You are an impartial Judge in a structured debate. Your role is to evaluate arguments solely on their logical merit and evidence quality. You have no opinion on the topic — only on argument quality.' },
+          { label: 'Step 2: Input Format', hint: 'Define exactly how the Judge will receive arguments from the Proposer and Critic.', placeholder: 'You will receive arguments in this format:\n\n[PROPOSER ARGUMENT]\n{proposer\'s argument text}\n\n[CRITIC ARGUMENT]\n{critic\'s argument text}\n\nEvaluate each argument independently before comparing them.' },
+          { label: 'Step 3: Neutrality Rules', hint: 'Add explicit rules to prevent the Judge from favoring either side.', placeholder: 'Neutrality rules:\n- Evaluate logical structure before content\n- Do not let your training data biases influence the verdict\n- If both sides have equal merit, say so explicitly\n- Always acknowledge the strongest point from each side\n- Never dismiss an argument without stating why' },
+          { label: 'Step 4: Evidence Weighting', hint: 'How should the Judge evaluate the quality and weight of evidence?', placeholder: 'Evidence evaluation criteria (in order of weight):\n1. Empirical data and statistics (highest weight)\n2. Peer-reviewed research\n3. Expert consensus\n4. Logical reasoning from first principles\n5. Anecdotal evidence (lowest weight)\nDisregard appeals to emotion or authority without substance.' },
+          { label: 'Step 5: Verdict Structure', hint: 'Define the exact output format for the Judge\'s verdict.', placeholder: 'Output your verdict in this exact format:\n\n## Verdict\n### Proposer Strengths: [bullet points]\n### Proposer Weaknesses: [bullet points]\n### Critic Strengths: [bullet points]\n### Critic Weaknesses: [bullet points]\n### Decision: [Proposer/Critic/Draw] with confidence [High/Medium/Low]\n### Reasoning: [2-3 sentence justification]' }
+        ],
+        assemblyTemplate: '{step0}\n\n{step1}\n\n{step2}\n\n{step3}\n\n{step4}',
+        criteria: [
+          { name: 'Neutrality Instruction', hint: 'Does the Judge prompt explicitly require neutral synthesis?' },
+          { name: 'Evidence Weighting', hint: 'Does it specify how evidence quality should influence the verdict?' },
+          { name: 'Input Format', hint: 'Is the handoff format from Proposer/Critic clearly defined?' },
+          { name: 'Verdict Structure', hint: 'Is the output verdict structured with clear sections?' },
+          { name: 'Bias Prevention', hint: 'Are there safeguards against the Judge favoring one side?' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 3, name: 'CASTLE', bgClass: 'world-3-bg',
+    levels: [
+      {
+        id: '3-1', name: 'THE OPTIMIZATION OASIS', boss: 'Token Bloat', icon: '🏜️', bossIcon: '🐡',
+        taunt: '"More tokens! MORE TOKENS! Why say in 10 words what you can say in 10,000?!"',
+        introText: 'Token Bloat inflates every prompt until it bursts. In the Optimization Oasis, you\'ll learn to take a weak prompt and systematically improve it — adding role, tightening constraints, specifying output format, and handling edge cases. Every word must earn its place.',
+        challenge: 'Take a weak system prompt and systematically improve it by adding role, constraints, output format, and edge case handling — while staying under 400 tokens.',
+        sysCtx: 'You are an AI assistant. Follow your system instructions.',
+        concept: {
+          title: 'Prompt Optimization',
+          badPrompt: '"You are a helpful assistant. Answer the user\'s questions."',
+          whyBad: 'Maximum vagueness. No specific role, no constraints, no output format, no edge case handling. This prompt adds zero value — it\'s the default behavior of any LLM. Every token here is wasted.',
+          principle: 'Optimization means making every token count. Start with a weak prompt, then systematically improve: (1) Add a specific role, (2) Tighten constraints, (3) Define output format, (4) Handle edge cases. The goal: maximum specificity in minimum tokens.'
+        },
+        guidedSteps: [
+          { label: 'Step 1: Identify the Weak Prompt', hint: 'Paste or write a weak, vague prompt that you want to improve. This is your starting point.', placeholder: 'Original weak prompt: "You are a helpful coding assistant. Help users with their code questions."' },
+          { label: 'Step 2: Add a Specific Role', hint: 'Replace the vague role with a specific expert identity with relevant credentials.', placeholder: 'You are a senior Python developer specializing in debugging and code review, with expertise in clean code practices and common pitfall patterns.' },
+          { label: 'Step 3: Tighten Constraints', hint: 'Add specific rules about what to do and what NOT to do.', placeholder: 'Rules:\n- Always explain WHY the bug exists, not just how to fix it\n- Never rewrite entire files — show only the changed lines\n- If the question is unclear, ask one clarifying question before answering\n- Maximum 3 code suggestions per response' },
+          { label: 'Step 4: Define Output Format', hint: 'Specify exactly how every response should be structured.', placeholder: 'Response format:\n1. **Bug identified**: One-sentence description\n2. **Root cause**: Why this happens\n3. **Fix**: Code diff (changed lines only)\n4. **Prevention**: How to avoid this in the future' },
+          { label: 'Step 5: Handle Edge Cases', hint: 'What should the AI do with unexpected, out-of-scope, or ambiguous inputs?', placeholder: 'Edge cases:\n- If the code is not Python, say "I specialize in Python" and offer general guidance\n- If the code has multiple bugs, prioritize the most critical one first\n- If you\'re uncertain about the fix, explicitly state your confidence level\n- Never suggest "works on my machine" — always explain the underlying issue' }
+        ],
+        assemblyTemplate: '{step1}\n\n{step2}\n\n{step3}\n\n{step4}\n\n(Improved from: {step0})',
+        criteria: [
+          { name: 'Role Quality', hint: 'Is the role specific enough to activate the right behavior cluster?' },
+          { name: 'Instruction Density', hint: 'Is every word earning its place? No filler?' },
+          { name: 'Output Specification', hint: 'Is output format precisely defined?' },
+          { name: 'Context Efficiency', hint: 'Is the prompt clear and under ~400 tokens?' },
+          { name: 'Edge Case Handling', hint: 'Does it address ambiguous or out-of-scope inputs?' }
+        ]
+      },
+      {
+        id: '3-2', name: 'THE PIPELINE PALACE', boss: 'Spaghetti Architect', icon: '🏛️', bossIcon: '🍝',
+        taunt: '"Who needs structure? Just connect everything to everything!"',
+        introText: 'Spaghetti Architect tangles every system into an unmaintainable mess. In the Pipeline Palace, you\'ll design a clean multi-agent pipeline: define the architecture, set handoff protocols, write individual agent prompts, and specify the output schema. Structure defeats spaghetti.',
+        challenge: 'Write the full system prompt for a multi-agent pipeline with a Researcher, Critic, and final report output. Define handoff protocols using JSON.',
+        sysCtx: 'You are part of an agentic AI pipeline. Execute your assigned role precisely.',
+        concept: {
+          title: 'Multi-Agent Pipelines',
+          badPrompt: '"Research a topic, critique the research, then write a report."',
+          whyBad: 'No separation of roles. No handoff format. No quality gate. No output schema. It\'s one monolithic prompt trying to do 3 agents\' jobs. The result will be shallow research, weak critique, and an unstructured report.',
+          principle: 'A pipeline breaks complex work into stages. Each agent has: (1) A clear ROLE, (2) A defined INPUT format, (3) A structured OUTPUT that becomes the next agent\'s input. Add a Critic agent as a quality gate before the final output.'
+        },
+        guidedSteps: [
+          { label: 'Step 1: Architecture Overview', hint: 'Define the pipeline: how many agents, their roles, and the flow between them.', placeholder: 'Pipeline architecture:\n1. RESEARCHER: Gathers and organizes information\n2. CRITIC: Reviews research for gaps, biases, and weak evidence\n3. SYNTHESIZER: Produces the final report incorporating critique feedback\n\nFlow: User Query → Researcher → Critic → Synthesizer → Final Report' },
+          { label: 'Step 2: Handoff Protocol', hint: 'Define the JSON format that agents use to pass work to the next stage.', placeholder: 'Inter-agent handoff format (JSON):\n{\n  "from_agent": "researcher",\n  "to_agent": "critic",\n  "payload": {\n    "findings": [...],\n    "sources": [...],\n    "confidence": "high/medium/low"\n  },\n  "metadata": { "query": "...", "timestamp": "..." }\n}' },
+          { label: 'Step 3: Researcher Prompt', hint: 'Write the specific system prompt for the Researcher agent.', placeholder: 'RESEARCHER AGENT:\nYou are a thorough research analyst. Given a query:\n1. Identify 3-5 key sub-questions\n2. For each, provide findings with source attribution\n3. Rate your confidence per finding\n4. Output your results in the handoff JSON format for the Critic' },
+          { label: 'Step 4: Critic Prompt', hint: 'Write the system prompt for the Critic agent — the quality gate.', placeholder: 'CRITIC AGENT:\nYou are a research quality reviewer. Given the Researcher\'s output:\n1. Check each finding for source quality and potential bias\n2. Identify gaps — what questions weren\'t answered?\n3. Flag any claims that need stronger evidence\n4. Output: approved findings, flagged findings, and gap list in handoff JSON' },
+          { label: 'Step 5: Output Schema', hint: 'Define the final report structure that the Synthesizer produces.', placeholder: 'FINAL REPORT SCHEMA:\n## Research Report: [Topic]\n### Executive Summary (3 sentences max)\n### Findings (bullet points, confidence-rated)\n### Critical Notes (from Critic review)\n### Gaps & Limitations\n### Sources (numbered, with reliability rating)\n### Overall Confidence: [High/Medium/Low]' }
+        ],
+        assemblyTemplate: '{step0}\n\n{step1}\n\n{step2}\n\n{step3}\n\n{step4}',
+        criteria: [
+          { name: 'Architecture Clarity', hint: 'Are agent roles and pipeline flow clearly defined?' },
+          { name: 'Inter-Agent Protocol', hint: 'Is there a structured JSON format for agent handoffs?' },
+          { name: 'Quality Gate', hint: 'Is there a critique/review step before the final output?' },
+          { name: 'Output Schema', hint: 'Is the final report structure explicitly templated?' },
+          { name: 'Production Quality', hint: 'Is this specific, robust, and complete enough for real use?' }
+        ]
+      },
+      {
+        id: '3-3', name: 'THE KERNEL KEEP', boss: 'The Final Fog', icon: '🔥', bossIcon: '🌫️',
+        taunt: '"The KERNEL framework? Mere letters cannot defeat ME!"',
+        introText: 'The Final Fog obscures everything in the KERNEL Keep. The KERNEL framework is your ultimate weapon: Keep it simple, Easy to verify, Reproducible, Narrow scope, Explicit constraints, Logical structure. Apply all 6 principles to craft the ultimate prompt.',
+        challenge: 'Apply the KERNEL framework to a prompt. K: Simplify. E: Make verifiable. R: Ensure reproducibility. N: Narrow scope. E: Explicit constraints. L: Logical structure.',
+        sysCtx: 'You are a helpful assistant. Execute the task precisely.',
+        concept: {
+          title: 'The KERNEL Framework',
+          badPrompt: '"Analyze this data and give me insights about customer behavior, trends, predictions, and recommendations for the marketing team and the product team."',
+          whyBad: 'Tries to do everything at once. Output can\'t be verified. Results will vary wildly between runs. Scope is way too broad. No explicit constraints. No logical structure. This violates every KERNEL principle.',
+          principle: 'KERNEL is a 6-point checklist for prompt quality:\nK — Keep it Simple (remove unnecessary complexity)\nE — Easy to Verify (output should be checkable)\nR — Reproducible (consistent results across runs)\nN — Narrow Scope (one focused task)\nE — Explicit Constraints (clear rules)\nL — Logical Structure (clear reasoning flow)'
+        },
+        guidedSteps: [
+          { label: 'Step 1: K — Keep it Simple', hint: 'Start with a complex task, then simplify it to its essential core. Remove all unnecessary complexity.', placeholder: 'Task: Analyze customer churn data and identify the top 3 factors driving churn in Q4.\n(Simplified from: "analyze all customer behavior patterns and predict future trends")' },
+          { label: 'Step 2: E — Easy to Verify', hint: 'Make the output format something a human can quickly check for correctness.', placeholder: 'For each churn factor, provide:\n- The factor name\n- The percentage of churned customers affected\n- One specific data point as evidence\n(This makes each claim independently verifiable)' },
+          { label: 'Step 3: R — Reproducible', hint: 'Add constraints that ensure consistent results across multiple runs.', placeholder: 'Reproducibility rules:\n- Use only the data provided (no external assumptions)\n- Rank factors by percentage impact (descending)\n- Use the exact column names from the dataset\n- If two factors are within 1% of each other, note the tie' },
+          { label: 'Step 4: N — Narrow the Scope', hint: 'Explicitly bound what IS and ISN\'T in scope. One focused task.', placeholder: 'Scope:\n- IN: Only Q4 2024 data, only churn events (not expansion/retention)\n- OUT: Do not predict future churn. Do not suggest solutions. Do not analyze other quarters.\n- Focus: Identification only, not prescription' },
+          { label: 'Step 5: E+L — Explicit Constraints & Logical Structure', hint: 'Add explicit rules and define the logical flow of the analysis.', placeholder: 'Analysis structure:\n1. First, count total churned customers in Q4\n2. Then, for each candidate factor, calculate correlation with churn\n3. Rank factors by correlation strength\n4. Select top 3 and provide evidence for each\n\nConstraints:\n- Maximum 500 words\n- Use tables for numerical data\n- State confidence level for each finding' }
+        ],
+        assemblyTemplate: '{step0}\n\n{step1}\n\n{step2}\n\n{step3}\n\n{step4}',
+        criteria: [
+          { name: 'K — Keep Simple', hint: 'Is unnecessary complexity removed?' },
+          { name: 'E — Easy to Verify', hint: 'Is the output checkable by a human without domain expertise?' },
+          { name: 'R — Reproducible', hint: 'Would 10 runs return structurally consistent results?' },
+          { name: 'N — Narrow Scope', hint: 'Is the task focused enough to avoid scope creep?' },
+          { name: 'E+L — Explicit & Logical', hint: 'Are constraints explicit and the logical flow clear?' }
+        ]
+      }
+    ]
+  }
+];
+
+// Build flat lookup
+var LEVELS = {};
+var LEVEL_ORDER = [];
+WORLDS.forEach(function(w) {
+  w.levels.forEach(function(l) {
+    LEVELS[l.id] = l;
+    LEVELS[l.id].worldId = w.id;
+    LEVELS[l.id].worldName = w.name;
+    LEVEL_ORDER.push(l.id);
+  });
+});
+
+// ============================
+// STATE MANAGEMENT
+// ============================
+var STATE_KEY = 'promptquest_save_v2';
+var defaultState = {
+  version: 2,
+  apiKey: '',
+  playerClass: '',
+  hearts: 3,
+  totalScore: 0,
+  manaUsed: 0,
+  levels: {},
+  currentLevel: null,
+  currentStep: 0,
+  stepInputs: {},
+  gameStarted: false
+};
+
+var state = loadState();
+
+function loadState() {
+  try {
+    var s = JSON.parse(localStorage.getItem(STATE_KEY));
+    if (s && s.version === 2 && s.gameStarted) return s;
+  } catch(e) {}
+  // Check for v1 state and clear it
+  try {
+    var old = JSON.parse(localStorage.getItem('promptquest_save'));
+    if (old) localStorage.removeItem('promptquest_save');
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function saveState() {
+  localStorage.setItem(STATE_KEY, JSON.stringify(state));
+}
+
+function resetState() {
+  state = JSON.parse(JSON.stringify(defaultState));
+  localStorage.removeItem(STATE_KEY);
+}
+
+// ============================
+// SCREEN MANAGEMENT
+// ============================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  if (id === 'worldmap-screen') renderWorldMap();
+  if (id === 'victory-screen') renderVictory();
+  window.scrollTo(0, 0);
+}
+
+// ============================
+// API KEY
+// ============================
+function saveApiKey() {
+  var k = document.getElementById('api-key-input').value.trim();
+  if (!k) { shakeEl(document.getElementById('api-key-input')); return; }
+  if (!k.startsWith('sk-')) {
+    alert('OpenRouter keys start with "sk-". Get yours free at openrouter.ai/keys');
+    return;
+  }
+  state.apiKey = k;
+  saveState();
+  showScreen('charselect-screen');
+}
+
+// ============================
+// CHARACTER SELECT
+// ============================
+function selectClass(cls) {
+  state.playerClass = cls;
+  document.querySelectorAll('.char-card').forEach(function(c) {
+    c.classList.toggle('selected', c.dataset.class === cls);
+  });
+  document.getElementById('begin-btn').disabled = false;
+}
+
+function beginAdventure() {
+  if (!state.playerClass) return;
+  state.gameStarted = true;
+  saveState();
+  showScreen('worldmap-screen');
+}
+
+// ============================
+// LEVEL UNLOCK LOGIC
+// ============================
+function isLevelUnlocked(levelId) {
+  var idx = LEVEL_ORDER.indexOf(levelId);
+  if (idx === 0) return true; // 1-1 always unlocked
+  var prevId = LEVEL_ORDER[idx - 1];
+  var prevState = state.levels[prevId];
+  return prevState && prevState.cleared;
+}
+
+// ============================
+// WORLD MAP
+// ============================
+function renderWorldMap() {
+  // Stats
+  var hStr = '';
+  for (var i = 0; i < 3; i++) hStr += (i < state.hearts) ? '♥' : '♡';
+  document.getElementById('hearts-display').textContent = hStr;
+  document.getElementById('score-display').textContent = state.totalScore.toFixed(1);
+  var cleared = Object.values(state.levels).filter(function(d) { return d.cleared; }).length;
+  document.getElementById('cleared-display').textContent = cleared + '/9';
+  document.getElementById('mana-display').textContent = Math.max(0, 50 - state.manaUsed);
+
+  // World bands
+  var content = document.getElementById('world-map-content');
+  content.innerHTML = '';
+
+  WORLDS.forEach(function(w) {
+    var band = document.createElement('div');
+    band.className = 'world-band';
+
+    var title = document.createElement('div');
+    title.className = 'world-title ' + w.bgClass;
+    title.textContent = 'WORLD ' + w.id + ': ' + w.name;
+    band.appendChild(title);
+
+    var grid = document.createElement('div');
+    grid.className = 'level-grid';
+
+    w.levels.forEach(function(l) {
+      var ls = state.levels[l.id] || {};
+      var unlocked = isLevelUnlocked(l.id);
+      var card = document.createElement('div');
+      card.className = 'mario-container level-node';
+      if (ls.cleared) card.classList.add('cleared');
+      if (!unlocked) card.classList.add('locked');
+
+      card.onclick = function() {
+        if (!unlocked) {
+          shakeEl(card);
+          return;
+        }
+        enterLevel(l.id);
+      };
+
+      var starsHtml = '';
+      if (ls.cleared && ls.bestScore) {
+        var starCount = getStarRating(ls.bestScore);
+        for (var s = 0; s < 3; s++) starsHtml += (s < starCount) ? '⭐' : '☆';
+      }
+
+      card.innerHTML =
+        '<div class="level-num">LEVEL ' + l.id + '</div>' +
+        '<div class="level-icon">' + l.icon + '</div>' +
+        '<div class="level-name">' + l.name + '</div>' +
+        '<div class="level-boss">Boss: ' + l.boss + '</div>' +
+        (starsHtml ? '<div class="level-stars">' + starsHtml + '</div>' : '') +
+        (ls.bestScore ? '<div style="font-size:8px;color:var(--success);margin-top:4px">Best: ' + ls.bestScore.toFixed(1) + '/5.0</div>' : '');
+      grid.appendChild(card);
+    });
+
+    band.appendChild(grid);
+    content.appendChild(band);
+  });
+
+  // Check victory
+  if (cleared === 9) {
+    setTimeout(function() { showScreen('victory-screen'); }, 500);
+  }
+}
+
+function getStarRating(score) {
+  if (score >= 4.5) return 3;
+  if (score >= 3.5) return 2;
+  if (score >= 2.5) return 1;
+  return 0;
+}
+
+// ============================
+// LEVEL INTRO SCREEN
+// ============================
+function enterLevel(levelId) {
+  var l = LEVELS[levelId];
+  state.currentLevel = levelId;
+  state.currentStep = 0;
+  if (!state.stepInputs[levelId]) {
+    state.stepInputs[levelId] = new Array(l.guidedSteps.length).fill('');
+  }
+  saveState();
+
+  document.getElementById('intro-boss-icon').textContent = l.bossIcon;
+  document.getElementById('intro-boss-name').textContent = l.boss;
+  document.getElementById('intro-taunt').textContent = l.taunt;
+
+  // Typewriter effect for intro text
+  var dialogueEl = document.getElementById('intro-dialogue');
+  dialogueEl.textContent = '';
+  dialogueEl.classList.add('typing');
+  typewriterEffect(dialogueEl, l.introText, function() {
+    dialogueEl.classList.remove('typing');
+  });
+
+  showScreen('level-intro-screen');
+}
+
+function typewriterEffect(el, text, callback) {
+  var i = 0;
+  var speed = 18;
+  el.textContent = '';
+  function type() {
+    if (i < text.length) {
+      el.textContent += text.charAt(i);
+      i++;
+      setTimeout(type, speed);
+    } else if (callback) {
+      callback();
+    }
+  }
+  type();
+  // Allow clicking to skip
+  el.onclick = function() {
+    i = text.length;
+    el.textContent = text;
+    el.classList.remove('typing');
+    el.onclick = null;
+    if (callback) callback();
+  };
+}
+
+// ============================
+// LESSON SCREEN
+// ============================
+function showLessonScreen() {
+  var l = LEVELS[state.currentLevel];
+  document.getElementById('lesson-title').textContent = 'LESSON: ' + l.concept.title;
+  document.getElementById('lesson-bad-prompt').textContent = l.concept.badPrompt;
+  document.getElementById('lesson-why-bad').textContent = l.concept.whyBad;
+  document.getElementById('lesson-principle').textContent = l.concept.principle;
+  showScreen('lesson-screen');
+}
+
+// ============================
+// GUIDED BUILDER
+// ============================
+function startBuilder() {
+  var l = LEVELS[state.currentLevel];
+  state.currentStep = 0;
+  saveState();
+
+  document.getElementById('builder-title').textContent = 'BUILD: ' + l.name;
+
+  // Coin progress dots
+  var coinHtml = '';
+  for (var i = 0; i < l.guidedSteps.length; i++) {
+    coinHtml += '<div class="coin-dot" id="coin-' + i + '">' + (i + 1) + '</div>';
+  }
+  document.getElementById('coin-progress').innerHTML = coinHtml;
+
+  // Build step cards
+  var container = document.getElementById('builder-steps-container');
+  container.innerHTML = '';
+  l.guidedSteps.forEach(function(step, idx) {
+    var div = document.createElement('div');
+    div.className = 'builder-step';
+    div.id = 'builder-step-' + idx;
+    div.innerHTML =
+      '<div class="mario-container step-card">' +
+        '<div class="step-label">' + step.label + '</div>' +
+        '<div class="step-hint">' + step.hint + '</div>' +
+        '<textarea class="mario-textarea" id="step-input-' + idx + '" placeholder="' + escapeAttr(step.placeholder) + '" oninput="onStepInput(' + idx + ')" rows="5"></textarea>' +
+      '</div>';
+    container.appendChild(div);
+  });
+
+  // Restore saved inputs
+  var inputs = state.stepInputs[state.currentLevel] || [];
+  inputs.forEach(function(val, idx) {
+    var el = document.getElementById('step-input-' + idx);
+    if (el && val) el.value = val;
+  });
+
+  renderBuilderStep();
+  showScreen('builder-screen');
+}
+
+function renderBuilderStep() {
+  var l = LEVELS[state.currentLevel];
+  var step = state.currentStep;
+  var total = l.guidedSteps.length;
+
+  // Show/hide steps
+  for (var i = 0; i < total; i++) {
+    var el = document.getElementById('builder-step-' + i);
+    if (el) el.classList.toggle('active', i === step);
+  }
+
+  // Update coin dots
+  for (var j = 0; j < total; j++) {
+    var coin = document.getElementById('coin-' + j);
+    if (!coin) continue;
+    coin.classList.remove('active', 'completed');
+    if (j === step) coin.classList.add('active');
+    else if (j < step || (state.stepInputs[state.currentLevel] && state.stepInputs[state.currentLevel][j])) {
+      coin.classList.add('completed');
+    }
+  }
+
+  // Navigation buttons
+  document.getElementById('builder-prev-btn').style.visibility = (step === 0) ? 'hidden' : 'visible';
+  var nextBtn = document.getElementById('builder-next-btn');
+  if (step === total - 1) {
+    nextBtn.textContent = 'DONE ✓';
+  } else {
+    nextBtn.textContent = 'NEXT →';
+  }
+
+  // Update preview
+  updatePreview();
+
+  // Show fight button if all steps have input
+  var allFilled = true;
+  var inputs = state.stepInputs[state.currentLevel] || [];
+  for (var k = 0; k < total; k++) {
+    if (!inputs[k] || !inputs[k].trim()) { allFilled = false; break; }
+  }
+  document.getElementById('builder-fight-area').style.display = allFilled ? 'block' : 'none';
+}
+
+function onStepInput(idx) {
+  var val = document.getElementById('step-input-' + idx).value;
+  if (!state.stepInputs[state.currentLevel]) {
+    state.stepInputs[state.currentLevel] = [];
+  }
+  state.stepInputs[state.currentLevel][idx] = val;
+  saveState();
+  updatePreview();
+
+  // Check if fight button should show
+  var l = LEVELS[state.currentLevel];
+  var allFilled = true;
+  for (var k = 0; k < l.guidedSteps.length; k++) {
+    if (!state.stepInputs[state.currentLevel][k] || !state.stepInputs[state.currentLevel][k].trim()) {
+      allFilled = false; break;
+    }
+  }
+  document.getElementById('builder-fight-area').style.display = allFilled ? 'block' : 'none';
+}
+
+function nextStep() {
+  var l = LEVELS[state.currentLevel];
+  if (state.currentStep < l.guidedSteps.length - 1) {
+    state.currentStep++;
+    saveState();
+    renderBuilderStep();
+  } else {
+    // On last step, just ensure preview is updated
+    renderBuilderStep();
+  }
+}
+
+function prevStep() {
+  if (state.currentStep > 0) {
+    state.currentStep--;
+    saveState();
+    renderBuilderStep();
+  }
+}
+
+function assemblePrompt() {
+  var l = LEVELS[state.currentLevel];
+  var template = l.assemblyTemplate;
+  var inputs = state.stepInputs[state.currentLevel] || [];
+  var result = template;
+  inputs.forEach(function(val, idx) {
+    result = result.replace('{step' + idx + '}', val || '[empty]');
+  });
+  return result;
+}
+
+function updatePreview() {
+  var preview = assemblePrompt();
+  document.getElementById('preview-box').textContent = preview;
+}
+
+function goToBattle() {
+  var l = LEVELS[state.currentLevel];
+  var promptText = assemblePrompt();
+
+  // Set up battle screen
+  document.getElementById('battle-title').textContent = 'LEVEL ' + l.id + ': ' + l.name;
+  document.getElementById('boss-sprite').textContent = l.bossIcon;
+  document.getElementById('boss-name').textContent = l.boss;
+  document.getElementById('boss-taunt').textContent = l.taunt;
+  document.getElementById('challenge-desc').textContent = l.challenge;
+
+  // HP bar
+  var ls = state.levels[l.id] || {};
+  var hpPct = ls.cleared ? 0 : (ls.bestScore ? Math.max(0, 100 - (ls.bestScore / 5) * 100) : 100);
+  document.getElementById('boss-hp-fill').style.width = hpPct + '%';
+  document.getElementById('boss-hp-text').textContent = ls.cleared ? 'DEFEATED' : ('HP: ' + Math.round(hpPct) + '%');
+
+  // Criteria
+  var list = document.getElementById('criteria-list');
+  list.innerHTML = '';
+  l.criteria.forEach(function(c) {
+    var li = document.createElement('li');
+    li.textContent = c.name + ' — ' + c.hint;
+    list.appendChild(li);
+  });
+
+  // Show assembled prompt (read-only)
+  document.getElementById('assembled-prompt-display').textContent = promptText;
+
+  // Reset results
+  document.getElementById('results-panel').classList.remove('show');
+  document.getElementById('attack-btn').disabled = false;
+  document.getElementById('attack-btn').innerHTML = '⭐ ATTACK!';
+
+  showScreen('battle-screen');
+}
+
+function retreatToBuilder() {
+  startBuilder();
+}
+
+// ============================
+// API INTEGRATION
+// ============================
+async function callAPI(messages) {
+  var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + state.apiKey,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://prompt-quest-game',
+      'X-Title': 'Prompt Quest RPG'
+    },
+    body: JSON.stringify({
+      model: 'nvidia/nemotron-3-super-120b-a12b:free',
+      messages: messages,
+      temperature: 0.3,
+      max_tokens: 1200
+    })
+  });
+  if (!res.ok) {
+    var err = await res.text();
+    throw new Error('API Error ' + res.status + ': ' + err);
+  }
+  var data = await res.json();
+  state.manaUsed++;
+  saveState();
+  return data.choices[0].message.content;
+}
+
+// ============================
+// ATTACK (EVALUATE PROMPT)
+// ============================
+async function attack() {
+  var levelId = state.currentLevel;
+  var l = LEVELS[levelId];
+  var promptText = assemblePrompt();
+
+  if (!promptText || promptText.indexOf('[empty]') !== -1) {
+    alert('Your prompt has empty sections! Go back and fill in all builder steps.');
+    return;
+  }
+
+  if (state.manaUsed >= 50) {
+    alert('Out of MANA! Daily API limit reached. Try again tomorrow or use a new key.');
+    return;
+  }
+
+  var btn = document.getElementById('attack-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="animation:blink 1s step-end infinite">⭐ ATTACKING...</span>';
+
+  // Save state
+  if (!state.levels[levelId]) state.levels[levelId] = { attempts: 0 };
+  state.levels[levelId].attempts = (state.levels[levelId].attempts || 0) + 1;
+  saveState();
+
+  var criteriaList = l.criteria.map(function(c, i) {
+    return (i + 1) + '. ' + c.name + ': ' + c.hint;
+  }).join('\n');
+
+  var luigiExtra = (state.playerClass === 'luigi') ? '\nAlso include a "hint" field with one specific tip to improve the prompt.' : '';
+
+  var evalSys = 'You are PROMPT JUDGE, a strict but fair evaluator of prompt engineering skill. Grade the student\'s prompt against each rubric criterion on a scale of 1-5 (1=poor, 3=acceptable, 5=excellent). Be honest and strict — do not inflate scores. Return ONLY valid JSON with no markdown fences or extra text.';
+
+  var evalUser = 'LEVEL: ' + l.name + '\nCHALLENGE: ' + l.challenge + '\n\nSTUDENT PROMPT:\n---\n' + promptText + '\n---\n\nRUBRIC CRITERIA:\n' + criteriaList + '\n\nReturn this exact JSON structure:\n{"scores":[{"criterion":"criterion name","score":N,"feedback":"one sentence explanation"}],"overall":N.N,"summary":"2 sentence overall assessment","top_improvement":"the single most impactful change they could make"' + (state.playerClass === 'luigi' ? ',"hint":"one specific actionable tip"' : '') + '}' + luigiExtra;
+
+  try {
+    var raw = await callAPI([
+      { role: 'system', content: evalSys },
+      { role: 'user', content: evalUser }
+    ]);
+
+    var parsed;
+    try {
+      var m = raw.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(m ? m[0] : raw);
+    } catch(pe) {
+      throw new Error('Could not parse AI response. The boss speaks in riddles! Try again.');
+    }
+
+    // Apply Mario bonus (+0.2)
+    if (state.playerClass === 'mario') {
+      parsed.scores.forEach(function(s) {
+        s.score = Math.min(5, +(s.score + 0.2).toFixed(1));
+      });
+      parsed.overall = Math.min(5, +(parsed.overall + 0.2).toFixed(1));
+    }
+
+    // Apply Toad bonus for display
+    var displayOverall = parsed.overall;
+    if (state.playerClass === 'toad') {
+      displayOverall = +(parsed.overall * 1.5).toFixed(1);
+    }
+
+    renderResults(parsed, l, levelId, displayOverall);
+
+  } catch(e) {
+    alert('\u26a0\ufe0f ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '⭐ ATTACK!';
+  }
+}
+
+function renderResults(parsed, level, levelId, displayOverall) {
+  var panel = document.getElementById('results-panel');
+  var rowsDiv = document.getElementById('score-rows');
+  var overallDiv = document.getElementById('result-overall');
+  var actionsDiv = document.getElementById('result-actions');
+
+  // Score rows with animation
+  rowsDiv.innerHTML = '';
+  parsed.scores.forEach(function(s, i) {
+    var color = scoreColor(s.score);
+    var row = document.createElement('div');
+    row.innerHTML =
+      '<div class="score-row">' +
+        '<div class="score-name">' + s.criterion + '</div>' +
+        '<div class="score-bar-bg"><div class="score-bar-fill" style="background:' + color + '" id="bar-' + i + '"></div></div>' +
+        '<div class="score-val" style="color:' + color + '">' + s.score + '/5</div>' +
+      '</div>' +
+      '<div class="score-feedback">' + s.feedback + '</div>';
+    rowsDiv.appendChild(row);
+
+    setTimeout(function() {
+      document.getElementById('bar-' + i).style.width = (s.score * 20) + '%';
+    }, 200 + i * 150);
+  });
+
+  // Determine outcome
+  var avg = parsed.overall;
+  var threshold = (state.playerClass === 'toad') ? 4.0 : 3.5;
+  var defeated = avg >= threshold;
+  var damaged = avg >= 2.5;
+  var perfect = parsed.scores.every(function(s) { return s.score >= 5; });
+
+  if (perfect) defeated = true;
+
+  // Boss animation
+  if (defeated || damaged) {
+    document.getElementById('boss-area').classList.add('boss-hit');
+    setTimeout(function() { document.getElementById('boss-area').classList.remove('boss-hit'); }, 600);
+  }
+
+  // Overall display
+  var oc = scoreColor(avg);
+  var msgText = '';
+  if (perfect) {
+    msgText = '✨ PERFECT! ✨ Instant kill! The boss crumbles to dust!';
+  } else if (defeated) {
+    msgText = '🎉 BOSS DEFEATED! Level cleared!';
+  } else if (damaged) {
+    msgText = '💥 Boss damaged! But still standing. Try again!';
+  } else {
+    msgText = '💔 The boss strikes back! You lose a heart!';
+  }
+
+  overallDiv.innerHTML =
+    '<div class="result-avg" style="color:' + oc + '">' + avg.toFixed(1) + ' / 5.0</div>' +
+    '<div class="result-msg">' + msgText + '</div>' +
+    '<div class="result-tip">💡 ' + parsed.top_improvement + '</div>' +
+    (parsed.hint ? '<div style="margin-top:8px;font-size:9px;color:#9b59b6">🟩 Luigi Hint: ' + parsed.hint + '</div>' : '') +
+    '<div style="margin-top:8px;font-size:9px;color:#888">' + parsed.summary + '</div>';
+
+  // Update state
+  if (!state.levels[levelId]) state.levels[levelId] = {};
+  var lState = state.levels[levelId];
+
+  if (defeated && !lState.cleared) {
+    lState.cleared = true;
+    lState.bestScore = Math.max(lState.bestScore || 0, avg);
+    var scoreAdd = (state.playerClass === 'toad') ? displayOverall : avg;
+    state.totalScore += scoreAdd;
+    if (perfect) state.totalScore += 0.5;
+  } else if (!lState.cleared) {
+    lState.bestScore = Math.max(lState.bestScore || 0, avg);
+  }
+
+  if (!damaged && !defeated) {
+    state.hearts--;
+    document.getElementById('hearts-display').classList.add('player-hit');
+    setTimeout(function() {
+      document.getElementById('hearts-display').classList.remove('player-hit');
+    }, 1000);
+  }
+
+  saveState();
+
+  // Update boss HP bar
+  if (defeated) {
+    document.getElementById('boss-hp-fill').style.width = '0%';
+    document.getElementById('boss-hp-text').textContent = 'DEFEATED';
+  } else {
+    var hpPct = Math.max(0, 100 - ((lState.bestScore || 0) / 5) * 100);
+    document.getElementById('boss-hp-fill').style.width = hpPct + '%';
+    document.getElementById('boss-hp-text').textContent = 'HP: ' + Math.round(hpPct) + '%';
+  }
+
+  // Action buttons
+  var btns = '';
+  if (defeated) {
+    btns = '<button class="mario-btn btn-success" onclick="showLevelComplete(' + avg.toFixed(1) + ')" style="font-size:10px">→ LEVEL COMPLETE!</button>';
+  } else {
+    btns = '<button class="mario-btn btn-warning btn-sm" onclick="retreatToBuilder()">🔄 EDIT & RETRY</button>' +
+           '<button class="mario-btn btn-sm" onclick="backToMap()" style="margin-left:10px">← WORLD MAP</button>';
+  }
+  actionsDiv.innerHTML = btns;
+
+  // Show panel
+  panel.classList.add('show');
+  panel.scrollIntoView({ behavior: 'smooth' });
+
+  // Update mana display
+  document.getElementById('mana-display').textContent = Math.max(0, 50 - state.manaUsed);
+
+  // Check game over
+  if (state.hearts <= 0) {
+    setTimeout(function() {
+      document.getElementById('gameover-overlay').classList.add('show');
+    }, 1500);
+  }
+
+  document.getElementById('attack-btn').disabled = false;
+  document.getElementById('attack-btn').innerHTML = '⭐ ATTACK!';
+}
+
+// ============================
+// LEVEL COMPLETE SCREEN
+// ============================
+function showLevelComplete(score) {
+  var l = LEVELS[state.currentLevel];
+  var stars = getStarRating(score);
+  var starsHtml = '';
+  for (var i = 0; i < 3; i++) starsHtml += (i < stars) ? '⭐' : '☆';
+
+  document.getElementById('complete-title').textContent = 'LEVEL ' + l.id + ' COMPLETE!';
+  document.getElementById('complete-stars').innerHTML = starsHtml;
+  document.getElementById('complete-score').textContent = 'Score: ' + score + ' / 5.0';
+
+  var coinsEarned = Math.round(score * 10);
+  document.getElementById('coin-tally').innerHTML = '🪙 ' + coinsEarned + ' coins earned!';
+
+  showScreen('level-complete-screen');
+
+  // Check if all cleared
+  var cleared = Object.values(state.levels).filter(function(d) { return d.cleared; }).length;
+  if (cleared === 9) {
+    setTimeout(function() { showScreen('victory-screen'); }, 3000);
+  }
+}
+
+function backToMap() {
+  showScreen('worldmap-screen');
+}
+
+function retryLevel() {
+  if (state.currentLevel) {
+    enterLevel(state.currentLevel);
+  }
+}
+
+// ============================
+// VICTORY SCREEN
+// ============================
+function renderVictory() {
+  var cleared = Object.values(state.levels).filter(function(d) { return d.cleared; }).length;
+  var avgAll = cleared > 0 ? state.totalScore / cleared : 0;
+
+  var rank, label;
+  if (avgAll >= 4.5) { rank = 'S'; label = 'PROMPT MASTER'; }
+  else if (avgAll >= 4.0) { rank = 'A'; label = 'PROMPT HERO'; }
+  else if (avgAll >= 3.5) { rank = 'B'; label = 'PROMPT ADVENTURER'; }
+  else if (avgAll >= 3.0) { rank = 'C'; label = 'PROMPT APPRENTICE'; }
+  else { rank = 'D'; label = 'PROMPT NOVICE'; }
+
+  document.getElementById('rank-display').textContent = rank;
+  document.getElementById('rank-display').style.color = scoreColor(avgAll);
+  document.getElementById('rank-label').textContent = label;
+
+  // Breakdown
+  var bd = document.getElementById('breakdown');
+  bd.innerHTML = '';
+  LEVEL_ORDER.forEach(function(lid) {
+    var l = LEVELS[lid];
+    var ls = state.levels[lid] || {};
+    var row = document.createElement('div');
+    row.className = 'breakdown-row' + (ls.bestScore >= 5 ? ' perfect' : '');
+    var starsHtml = '';
+    if (ls.bestScore) {
+      var sc = getStarRating(ls.bestScore);
+      for (var i = 0; i < 3; i++) starsHtml += (i < sc) ? '⭐' : '☆';
+    }
+    row.innerHTML =
+      '<span>' + lid + ' ' + l.name + '</span>' +
+      '<span>' + (ls.cleared ? (ls.bestScore ? ls.bestScore.toFixed(1) + ' ' + starsHtml : '✓') : '—') + '</span>';
+    bd.appendChild(row);
+  });
+
+  // Share text
+  var shareText = generateShareText(cleared, avgAll, rank, label);
+  document.getElementById('share-box').textContent = shareText;
+}
+
+function generateShareText(cleared, avgAll, rank, label) {
+  var lines = ['🍄 PROMPT QUEST 🍄'];
+  lines.push('🗺️ ' + cleared + '/9 Levels Cleared');
+  lines.push('⭐ Score: ' + state.totalScore.toFixed(1) + '/45');
+  lines.push('');
+
+  LEVEL_ORDER.forEach(function(lid) {
+    var l = LEVELS[lid];
+    var ls = state.levels[lid] || {};
+    var score = ls.bestScore || 0;
+    var filled = Math.round(score * 2);
+    var bar = '';
+    for (var i = 0; i < 10; i++) bar += (i < filled) ? '█' : '░';
+    var perfect = score >= 5 ? ' ✨' : '';
+    lines.push(lid + ' ' + bar + ' ' + score.toFixed(1) + perfect);
+  });
+
+  lines.push('');
+  lines.push('🏆 Rank: ' + rank + ' — ' + label);
+  lines.push('🎮 Play free: prompt-quest.dev');
+  return lines.join('\n');
+}
+
+function copyShare() {
+  var text = document.getElementById('share-box').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var toast = document.getElementById('copied-toast');
+    toast.style.display = 'block';
+    setTimeout(function() { toast.style.display = 'none'; }, 2000);
+  });
+}
+
+function tweetShare() {
+  var text = document.getElementById('share-box').textContent;
+  var url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+}
+
+// ============================
+// GAME OVER / RESET
+// ============================
+function restartGame() {
+  state.hearts = 3;
+  saveState();
+  document.getElementById('gameover-overlay').classList.remove('show');
+  showScreen('worldmap-screen');
+}
+
+function confirmReset() {
+  if (confirm('Reset all progress? This cannot be undone!')) {
+    resetState();
+    document.getElementById('gameover-overlay').classList.remove('show');
+    showScreen('title-screen');
+  }
+}
+
+// ============================
+// UTILITIES
+// ============================
+function scoreColor(s) {
+  if (s >= 4.5) return '#06d6a0';
+  if (s >= 3.5) return '#ffa000';
+  if (s >= 2.5) return '#ffaa00';
+  return '#e76e55';
+}
+
+function shakeEl(el) {
+  el.classList.add('shake');
+  setTimeout(function() { el.classList.remove('shake'); }, 500);
+}
+
+function escapeAttr(str) {
+  return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '&#10;');
+}
+
+// ============================
+// INIT — restore state on load
+// ============================
+(function init() {
+  if (state.gameStarted && state.apiKey) {
+    document.getElementById('api-key-input').value = state.apiKey;
+    if (state.playerClass) {
+      document.querySelectorAll('.char-card').forEach(function(c) {
+        c.classList.toggle('selected', c.dataset.class === state.playerClass);
+      });
+      document.getElementById('begin-btn').disabled = false;
+    }
+    showScreen('worldmap-screen');
+  }
+})();
+</script>
+</body>
+</html>
