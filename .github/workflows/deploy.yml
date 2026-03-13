@@ -6,6 +6,7 @@ on:
     paths:
       - prompt-engineering-eval.html
       - prompt-engineering-tweets.html
+      - prompt-engineering-game.html
 
 jobs:
   deploy:
@@ -20,3 +21,4 @@ jobs:
           command: |
             r2 object put docs/prompt-engineering-eval.html --file=prompt-engineering-eval.html --content-type text/html
             r2 object put docs/prompt-engineering-tweets.html --file=prompt-engineering-tweets.html --content-type text/html
+            r2 object put docs/prompt-engineering-game.html --file=prompt-engineering-game.html --content-type text/html
